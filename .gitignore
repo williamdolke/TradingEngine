@@ -1,0 +1,77 @@
+# Ignore Visual Studio Code settings
+.vscode/
+.vscode/*
+
+# Ignore build output directories
+bin/
+obj/
+
+# Ignore user-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Ignore package directories
+packages/
+*.nupkg
+*.snupkg
+
+# Ignore build logs
+*.log
+
+# Ignore IDE-specific files
+.idea/
+*.vs/
+.vscode/
+
+# Ignore Mac-specific files
+.DS_Store
+
+# Ignore Rider IDE files
+.idea/
+
+# Ignore JetBrains Rider
+.idea/
+*.sln.iml
+
+# Ignore Logs directory in TradingEngineServer
+TradingEngineServer/Logs/
+
+# Ignore project-related files
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Ignore NuGet packages
+*.nupkg
+# Uncomment if you have such a file and don't want to check it in.
+# Packages.config; NuGet's layout file. If you are not using package.json remove this line.
+packages.config
+
+# Ignore other folders for .NET
+*.pidb
+*_i.c
+*_p.c
+*_i.h
+*.ilk
+*.meta
+*.obj
+*.pch
+*.pdb
+*.rsp
+*.runsettings
+*.sln*
+*.suo
+*.target
+*.tmp
+*.unsuccessfulbuild
+*.userosscache
+*.userprefs
+*.yml
+
+# Ignore additional folders for .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
