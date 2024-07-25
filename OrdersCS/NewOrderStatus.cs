@@ -1,7 +1,9 @@
 namespace TradingEngineServer.Orders
 {
-    public class NewOrderStatus
+    public enum NewOrderStatus
     {
-        
+        Accepted,
+        Rejected,
+        Error
     }
 }

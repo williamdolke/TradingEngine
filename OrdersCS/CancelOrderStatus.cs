@@ -1,7 +1,10 @@
 namespace TradingEngineServer.Orders
 {
-    public class CancelOrderStatus
+    public enum CancelOrderStatus
     {
-        
+        Success,
+        NotFound,
+        AlreadyCancelled,
+        Error
     }
 }

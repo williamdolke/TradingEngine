@@ -5,7 +5,6 @@ namespace TradingEngineServer.Orders
         public CancelOrder(IOrderCore orderCore)
         {
             // FIELDS //
-
             _orderCore = orderCore;
         }
 

@@ -4,10 +4,9 @@ namespace TradingEngineServer.Rejects
 {
     public class RejectCreator
     {
-        public static Rejection GetOrderCoreReection(IOrderCore rejectedOrder, RejectionReason rejectionReason)
+        public static Rejection GetOrderCoreRejection(IOrderCore rejectedOrder, RejectionReason rejectionReason)
         {
             return new Rejection(rejectedOrder, rejectionReason);
         }
-        
     }
 }

@@ -1,7 +1,9 @@
 namespace TradingEngineServer.Orderbook
 {
-    public class MatchResult
+    public enum MatchResult
     {
-        
+        Unknown,
+        Error,
+        Success,
     }
 }

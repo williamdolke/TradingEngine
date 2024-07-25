@@ -1,7 +1,12 @@
 namespace TradingEngineServer.Orders
 {
-    public class ModifyOrderStatus
+    public enum ModifyOrderStatus
     {
-        
+        Success,
+        NotFound,
+        InvalidPrice,
+        InvalidQuantity,
+        AlreadyCancelled,
+        Error
     }
 }

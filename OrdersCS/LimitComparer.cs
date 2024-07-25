@@ -2,7 +2,7 @@ namespace TradingEngineServer.Orders
 {
     public class BidLimitComparer : IComparer<Limit>
     {
-        public static IComparer<Limit> Coomparer { get; } = new BidLimitComparer();
+        public static IComparer<Limit> Comparer { get; } = new BidLimitComparer();
         public int Compare(Limit? x, Limit y)
         {
             if (x.Price == y.Price)

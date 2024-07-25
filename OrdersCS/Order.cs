@@ -35,6 +35,11 @@ namespace TradingEngineServer.Orders
             CurrentQuantity += quantityDelta;
         }
 
+        public CancelOrder ToCancelOrder()
+        {
+            return new CancelOrder(this);
+        }
+
             public void decreaseQuantity(uint quantityDelta)
         {
             if (quantityDelta > CurrentQuantity)

@@ -4,17 +4,17 @@ namespace TradingEngineServer.Orders
     {
         public static CancelOrderStatus GetCancelOrderStatus(CancelOrder cancelOrder)
         {
-            return new CancelOrderStatus();
+            return CancelOrderStatus.Error;
         }
 
         public static NewOrderStatus GenerateNewOrderStatus(Order order)
         {
-            return new NewOrderStatus();
+            return NewOrderStatus.Error;
         }
 
         public static ModifyOrderStatus GenerateModifyOrderStatus(ModifyOrder modifyOrder)
         {
-            return new ModifyOrderStatus();
+            return ModifyOrderStatus.Error;
         }
     }
 }

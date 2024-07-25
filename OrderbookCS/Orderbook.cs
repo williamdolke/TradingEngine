@@ -3,19 +3,22 @@ using TradingEngineServer.Orders;
 
 namespace TradingEngineServer.Orderbook
 {
+    /// <summary>
+    /// Base Orderbook class that stores the state of Orders.
+    /// </summary>
     public class Orderbook : IRetrievalOrderbook
     {
         // PRIVATE FIELDS //
         private readonly Security _instrument;
+        private readonly object _lock = new object();
         private readonly Dictionary<long, OrderbookEntry> _orders = new Dictionary<long, OrderbookEntry>();
         // nlog(n) retrieval times so better than linear searches
         private readonly SortedSet<Limit> _askLimits = new SortedSet<Limit>(AskLimitComparer.Comparer);
-        private readonly SortedSet<Limit> _bidLimits = new SortedSet<Limit>(BidLimitComparer.Coomparer);
+        private readonly SortedSet<Limit> _bidLimits = new SortedSet<Limit>(BidLimitComparer.Comparer);
 
         public Orderbook(Security instrument)
         {
             _instrument = instrument;
-            
         }
 
         public int Count => _orders.Count;
@@ -23,10 +26,61 @@ namespace TradingEngineServer.Orderbook
         public void AddOrder(Order order)
         {
             var baseLimit = new Limit(order.Price);
-            AddOrder(order, baseLimit, order.IsBuySide ? _bidLimits : _askLimits, _orders);
+            lock (_lock)
+            {
+                // Attempt to match the order first
+                if (!MatchOrder(order))
+                {
+                    // If the order is not fully matched, add it to the order book
+                    AddOrderToBook(order, baseLimit, order.IsBuySide ? _bidLimits : _askLimits, _orders);
+                }
+            }
         }
 
-        private static void AddOrder(Order order, Limit baseLimit, SortedSet<Limit> limitLevels, Dictionary<long, OrderbookEntry> internalBook)
+        private bool MatchOrder(Order order)
+        {
+            var oppositeLimits = order.IsBuySide ? _askLimits : _bidLimits;
+            var matched = false;
+
+            foreach (var limit in oppositeLimits)
+            {
+                if ((order.IsBuySide && order.Price >= limit.Price) ||
+                    (!order.IsBuySide && order.Price <= limit.Price))
+                {
+                    var currentOrder = limit.Head;
+                    while (currentOrder != null)
+                    {
+                        var matchedQuantity = Math.Min(order.CurrentQuantity, currentOrder.CurrentOrder.CurrentQuantity);
+                        ExecuteTrade(order, currentOrder, matchedQuantity);
+
+                        order.decreaseQuantity(matchedQuantity);
+                        currentOrder.CurrentOrder.decreaseQuantity(matchedQuantity);
+
+                        if (currentOrder.CurrentOrder.CurrentQuantity == 0)
+                        {
+                            RemoveOrder(currentOrder.CurrentOrder.ToCancelOrder());
+                        }
+
+                        if (order.CurrentQuantity == 0)
+                        {
+                            matched = true;
+                            break;
+                        }
+
+                        currentOrder = currentOrder.Next;
+                    }
+                }
+
+                if (order.CurrentQuantity == 0)
+                {
+                    break;
+                }
+            }
+
+            return matched;
+        }
+
+        private void AddOrderToBook(Order order, Limit baseLimit, SortedSet<Limit> limitLevels, Dictionary<long, OrderbookEntry> internalBook)
         {
             if (limitLevels.TryGetValue(baseLimit, out Limit limit))
             {
@@ -56,12 +110,22 @@ namespace TradingEngineServer.Orderbook
             }
         }
 
+        private void ExecuteTrade(Order incomingOrder, OrderbookEntry existingOrder, uint matchedQuantity)
+        {
+            // Placeholder for the trade execution logic
+            // Update the trades, notify the parties involved, etc.
+            Console.WriteLine($"Executed trade: {matchedQuantity} units at {existingOrder.CurrentOrder.Price} price.");
+        }
+
         public void ChangeOrder(ModifyOrder modifyOrder)
         {
-            if (_orders.TryGetValue(modifyOrder.OrderId, out OrderbookEntry orderbookEntry))
+            lock (_lock)
             {
-                RemoveOrder(modifyOrder.ToCancelOrder());
-                AddOrder(modifyOrder.ToNewOrder(), orderbookEntry.ParentLimit, modifyOrder.IsBuySide ? _bidLimits : _askLimits, _orders);
+                if (_orders.TryGetValue(modifyOrder.OrderId, out OrderbookEntry orderbookEntry))
+                {
+                    RemoveOrder(modifyOrder.ToCancelOrder());
+                    AddOrder(modifyOrder.ToNewOrder());
+                }
             }
         }
 
@@ -77,14 +141,12 @@ namespace TradingEngineServer.Orderbook
             {
                 if (askLimit.IsEmpty)
                     continue;
-                else
+
+                var askLimitPointer = askLimit.Head;
+                while (askLimitPointer != null)
                 {
-                    OrderbookEntry askLimitPointer = askLimit.Head;
-                    while (askLimitPointer != null)
-                    {
-                        orderbookEntries.Add(askLimitPointer);
-                        askLimitPointer = askLimitPointer.Next;
-                    }
+                    orderbookEntries.Add(askLimitPointer);
+                    askLimitPointer = askLimitPointer.Next;
                 }
             }
             return orderbookEntries;
@@ -97,14 +159,12 @@ namespace TradingEngineServer.Orderbook
             {
                 if (bidLimit.IsEmpty)
                     continue;
-                else
+
+                var bidLimitPointer = bidLimit.Head;
+                while (bidLimitPointer != null)
                 {
-                    OrderbookEntry bidLimitPointer = bidLimit.Head;
-                    while (bidLimitPointer != null)
-                    {
-                        orderbookEntries.Add(bidLimitPointer);
-                        bidLimitPointer = bidLimitPointer.Next;
-                    }
+                    orderbookEntries.Add(bidLimitPointer);
+                    bidLimitPointer = bidLimitPointer.Next;
                 }
             }
             return orderbookEntries;
@@ -112,19 +172,19 @@ namespace TradingEngineServer.Orderbook
 
         public OrderbookSpread GetSpread()
         {
-            long? bestAsk = null, bestBid = null;
-            if (_askLimits.Any() && _askLimits.Min.IsEmpty)
-                bestAsk = _askLimits.Min.Price;
-            if (_bidLimits.Any() && _bidLimits.Max.IsEmpty)
-                bestBid = _bidLimits.Max.Price;
+            long? bestAsk = _askLimits.Any() && !_askLimits.Min.IsEmpty ? _askLimits.Min.Price : (long?)null;
+            long? bestBid = _bidLimits.Any() && !_bidLimits.Max.IsEmpty ? _bidLimits.Max.Price : (long?)null;
             return new OrderbookSpread(bestBid, bestAsk);
         }
 
         public void RemoveOrder(CancelOrder cancelOrder)
         {
-            if (_orders.TryGetValue(cancelOrder.OrderId, out var orderbookEntry))
+            lock (_lock)
             {
-                RemoveOrder(cancelOrder.OrderId, orderbookEntry, _orders);
+                if (_orders.TryGetValue(cancelOrder.OrderId, out var orderbookEntry))
+                {
+                    RemoveOrder(cancelOrder.OrderId, orderbookEntry, _orders);
+                }
             }
         }
 
