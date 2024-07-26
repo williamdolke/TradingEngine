@@ -57,6 +57,7 @@ namespace TradingEngineServer.Orderbook
             );
 
             Console.WriteLine($"Matched {matchedQuantity} units between Order {incomingOrder.OrderId} and Order {existingOrder.OrderId} at price {existingOrder.Price}");
+            // TODO: Setup logger in this class library
         }
     }
 }
