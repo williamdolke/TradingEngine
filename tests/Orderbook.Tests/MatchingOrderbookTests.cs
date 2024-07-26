@@ -9,16 +9,17 @@ using TradingEngineServer.Instrument;
 using TradingEngineServer.Orders;
 using TradingEngineServer.Orderbook;
 
-namespace OrderbookTests
+namespace MatchingOrderbookTests
 {
     [N.TestFixture]
-    public class OrderbookTests
+    public class MatchingOrderbookTests
     {
         [N.Test]
         public void TestAddOrders()
         {
             Security instrument = new Security("TestInstrument");
-            Orderbook orderbook = new Orderbook(instrument);
+            FIFOMatchingStrategy matchingStrategy = new FIFOMatchingStrategy();
+            MatchingOrderbook orderbook = new MatchingOrderbook(matchingStrategy, instrument);
 
             List<Order> testOrders = GenerateTestOrders();
             for (int i = 0; i < testOrders.Count; i++)

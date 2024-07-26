@@ -1,7 +1,9 @@
+using TradingEngineServer.Orders;
+
 namespace TradingEngineServer.Orderbook
 {
     public interface IMatchingStrategy
     {
-        MatchResult Match(Orderbook orderbook);
+        bool Match(Orderbook orderbook, Order order);
     }
 }

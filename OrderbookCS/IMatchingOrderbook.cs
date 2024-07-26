@@ -1,3 +1,5 @@
+using TradingEngineServer.Orders;
+
 namespace TradingEngineServer.Orderbook
 {
     /// <summary>
@@ -5,6 +7,6 @@ namespace TradingEngineServer.Orderbook
     /// </summary>
     public interface IMatchingOrderbook : IRetrievalOrderbook
     {
-        MatchResult Match();
+        bool Match(Order order);
     }
 }

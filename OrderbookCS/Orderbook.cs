@@ -10,11 +10,10 @@ namespace TradingEngineServer.Orderbook
     {
         // PRIVATE FIELDS //
         private readonly Security _instrument;
-        private readonly object _lock = new object();
         private readonly Dictionary<long, OrderbookEntry> _orders = new Dictionary<long, OrderbookEntry>();
         // nlog(n) retrieval times so better than linear searches
-        private readonly SortedSet<Limit> _askLimits = new SortedSet<Limit>(AskLimitComparer.Comparer);
-        private readonly SortedSet<Limit> _bidLimits = new SortedSet<Limit>(BidLimitComparer.Comparer);
+        public readonly SortedSet<Limit> _askLimits = new SortedSet<Limit>(AskLimitComparer.Comparer);
+        public readonly SortedSet<Limit> _bidLimits = new SortedSet<Limit>(BidLimitComparer.Comparer);
 
         public Orderbook(Security instrument)
         {
@@ -23,61 +22,10 @@ namespace TradingEngineServer.Orderbook
 
         public int Count => _orders.Count;
 
-        public void AddOrder(Order order)
+        public virtual void AddOrder(Order order)
         {
             var baseLimit = new Limit(order.Price);
-            lock (_lock)
-            {
-                // Attempt to match the order first
-                if (!MatchOrder(order))
-                {
-                    // If the order is not fully matched, add it to the order book
-                    AddOrderToBook(order, baseLimit, order.IsBuySide ? _bidLimits : _askLimits, _orders);
-                }
-            }
-        }
-
-        private bool MatchOrder(Order order)
-        {
-            var oppositeLimits = order.IsBuySide ? _askLimits : _bidLimits;
-            var matched = false;
-
-            foreach (var limit in oppositeLimits)
-            {
-                if ((order.IsBuySide && order.Price >= limit.Price) ||
-                    (!order.IsBuySide && order.Price <= limit.Price))
-                {
-                    var currentOrder = limit.Head;
-                    while (currentOrder != null)
-                    {
-                        var matchedQuantity = Math.Min(order.CurrentQuantity, currentOrder.CurrentOrder.CurrentQuantity);
-                        ExecuteTrade(order, currentOrder, matchedQuantity);
-
-                        order.decreaseQuantity(matchedQuantity);
-                        currentOrder.CurrentOrder.decreaseQuantity(matchedQuantity);
-
-                        if (currentOrder.CurrentOrder.CurrentQuantity == 0)
-                        {
-                            RemoveOrder(currentOrder.CurrentOrder.ToCancelOrder());
-                        }
-
-                        if (order.CurrentQuantity == 0)
-                        {
-                            matched = true;
-                            break;
-                        }
-
-                        currentOrder = currentOrder.Next;
-                    }
-                }
-
-                if (order.CurrentQuantity == 0)
-                {
-                    break;
-                }
-            }
-
-            return matched;
+            AddOrderToBook(order, baseLimit, order.IsBuySide ? _bidLimits : _askLimits, _orders);
         }
 
         private void AddOrderToBook(Order order, Limit baseLimit, SortedSet<Limit> limitLevels, Dictionary<long, OrderbookEntry> internalBook)
@@ -110,22 +58,12 @@ namespace TradingEngineServer.Orderbook
             }
         }
 
-        private void ExecuteTrade(Order incomingOrder, OrderbookEntry existingOrder, uint matchedQuantity)
+        public virtual void ChangeOrder(ModifyOrder modifyOrder)
         {
-            // Placeholder for the trade execution logic
-            // Update the trades, notify the parties involved, etc.
-            Console.WriteLine($"Executed trade: {matchedQuantity} units at {existingOrder.CurrentOrder.Price} price.");
-        }
-
-        public void ChangeOrder(ModifyOrder modifyOrder)
-        {
-            lock (_lock)
+            if (_orders.TryGetValue(modifyOrder.OrderId, out OrderbookEntry orderbookEntry))
             {
-                if (_orders.TryGetValue(modifyOrder.OrderId, out OrderbookEntry orderbookEntry))
-                {
-                    RemoveOrder(modifyOrder.ToCancelOrder());
-                    AddOrder(modifyOrder.ToNewOrder());
-                }
+                RemoveOrder(modifyOrder.ToCancelOrder());
+                AddOrder(modifyOrder.ToNewOrder());
             }
         }
 
@@ -177,14 +115,11 @@ namespace TradingEngineServer.Orderbook
             return new OrderbookSpread(bestBid, bestAsk);
         }
 
-        public void RemoveOrder(CancelOrder cancelOrder)
+        public virtual void RemoveOrder(CancelOrder cancelOrder)
         {
-            lock (_lock)
+            if (_orders.TryGetValue(cancelOrder.OrderId, out var orderbookEntry))
             {
-                if (_orders.TryGetValue(cancelOrder.OrderId, out var orderbookEntry))
-                {
-                    RemoveOrder(cancelOrder.OrderId, orderbookEntry, _orders);
-                }
+                RemoveOrder(cancelOrder.OrderId, orderbookEntry, _orders);
             }
         }
 
