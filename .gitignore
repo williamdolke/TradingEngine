@@ -62,7 +62,6 @@ packages.config
 *.pdb
 *.rsp
 *.runsettings
-*.sln*
 *.suo
 *.target
 *.tmp
