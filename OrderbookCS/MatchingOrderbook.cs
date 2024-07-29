@@ -23,7 +23,7 @@ namespace TradingEngineServer.Orderbook
             lock (_lock)
             {
                 // Attempt to match the order first
-                if (!Match(order))
+                if (order.CurrentQuantity > 0 && !Match(order))
                 {
                     // If the order is not fully matched, add it to the order book
                     base.AddOrder(order);

@@ -30,6 +30,7 @@ namespace TradingEngineServer.Orderbook
 
                         if (order.CurrentQuantity == 0)
                         {
+                            orderbook.RemoveOrder(order.ToCancelOrder());
                             matched = true;
                             break;
                         }
